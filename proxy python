@@ -1,0 +1,25 @@
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import urllib.request
+
+ESP32_IP = "10.170.195.16"
+
+class ProxyHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            url = f"http://{ESP32_IP}{self.path}"
+            response = urllib.request.urlopen(url, timeout=5)
+            self.send_response(response.status)
+            self.send_header('Content-type', response.headers.get_content_type())
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(response.read())
+        except Exception as e:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(f"Error: {e}".encode())
+    
+    def log_message(self, format, *args):
+        print(f"[Proxy] {args[0]}")
+
+print(f"🔄 Proxy: http://0.0.0.0:8080 → http://{ESP32_IP}")
+HTTPServer(('0.0.0.0', 8080), ProxyHandler).serve_forever()
